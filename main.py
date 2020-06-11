@@ -1,24 +1,28 @@
 import csv
 import os
-import threading
-import time
-from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
-
-def sendMail(email):
-    time.sleep(.5)
+async def sendMail(email):
+    await asyncio.sleep(.5)
     print("Send mail to {0}".format(email))
 
-threadList = []
+async def main():
+    tasks = []
+    dataPath = os.path.join(os.path.dirname(__file__), "assets", "mails.csv")
+    mailCounter = 0
+    with open(file = dataPath) as csvfile:
 
-dataPath = os.path.join(os.path.dirname(__file__), "assets", "mails.csv")
+        mails = csv.reader(csvfile, delimiter = ",")
 
-print(dataPath)
-with open(file = dataPath) as csvfile:
-    executor = ThreadPoolExecutor(max_workers=150)
-    mails = csv.reader(csvfile, delimiter = ",")
+        for row in mails:
+            mailCounter += 1
+            tasks.append(asyncio.ensure_future(sendMail(row[0])))
 
-    for row in mails:
-        executor.submit(sendMail, row[0])
+    await asyncio.gather(*tasks)
+    print("Mails send: " + str(mailCounter))
 
 
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+loop.close()
